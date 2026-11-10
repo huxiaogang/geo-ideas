@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>闭环测试</title></head>
+<body><pre id="out">running...</pre>
+<script>
+window.__ERRS=[];window.addEventListener('error',function(e){window.__ERRS.push(e.message);});
+</script>
+<script src="../vendor/katex/katex.min.js"></script>
+<script src="../assets/js/md.js"></script>
+<script src="../assets/js/geo.js"></script>
+<script src="../assets/js/figures.js"></script>
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../content/meta.js"></script>
+<script src="../content/tags.js"></script>
+<script src="../content/ideas.js"></script>
+<script src="../content/methods.js"></script>
+<script src="../content/patterns.js"></script>
+<script src="../content/problems.js"></script>
+<script src="../assets/js/pages.js"></script>
+<script>
+(function(){
+  const L=[];let bad=0;
+  function log(s){L.push(s);document.getElementById('out').textContent=L.join('\n');}
+  function chk(n,c,e){if(!c){bad++;log('FAIL '+n+(e?' :: '+e:''));}else log('OK   '+n);}
+  function go(h){history.replaceState(null,'',h);window.App.route();}
+
+  setTimeout(function(){
+    const S=window.Store; S.reset();
+    chk('initial no task done', ['review','problem','drill'].every(t=>!S.isDone(t)));
+
+    /* 1) 打开例题 → 自动完成 problem */
+    go('#/card/pr-01');
+    chk('opening a problem marks today problem done', S.isDone('problem'));
+
+    /* 2) 翻卡评 3 张 → 自动完成 review */
+    go('#/review');
+    let clicks=0;
+    for(let k=0;k<3;k++){
+      const flip=document.querySelector('#doflip');
+      if(!flip){log('     no flip at step '+k);break;}
+      flip.click();
+      const rate=document.querySelector('#rate [data-g="3"]');
+      if(!rate){log('     no rate at step '+k);break;}
+      rate.click(); clicks++;
+    }
+    chk('rated 3 cards', clicks===3, 'clicks='+clicks);
+    chk('review auto-done after 3 ratings', S.isDone('review'));
+
+    /* 3) 训练场答 5 题 → 自动完成 drill */
+    go('#/drill');
+    const start=document.querySelector('#start');
+    chk('drill intro present', !!start);
+    if(start){
+      /* 把题数设为 5 再开始 */
+      const qn=document.querySelector('#qn'); if(qn) qn.value='5';
+      start.click();
+      let n=0;
+      while(n<5){
+        const opts=document.querySelectorAll('#opts [data-id]');
+        if(!opts.length) break;
+        opts[0].click();              /* 随便选一个 */
+        const goBtn=document.querySelector('#go');
+        if(!goBtn) break;
+        goBtn.click(); n++;
+      }
+      chk('answered 5 drill questions', n===5, 'n='+n);
+      chk('drill auto-done after 5', S.isDone('drill'));
+    }
+
+    /* 4) 首页三项都显示完成 */
+    go('#/');
+    const lines=document.querySelectorAll('.taskline.done');
+    chk('home shows 3 done tasks', lines.length===3, 'done='+lines.length);
+    chk('home ring shows 3/3', /3\/3/.test(document.querySelector('.ring').textContent),
+      document.querySelector('.ring')?document.querySelector('.ring').textContent:'no ring');
+
+    chk('no runtime errors', window.__ERRS.length===0, window.__ERRS.join(' | '));
+    log('---'); log('FAIL='+bad);
+    document.title='LOOP_'+bad;
+  },400);
+})();
+</script>
+</body></html>

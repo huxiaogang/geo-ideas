@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>子路径/HTTP 部署检查</title></head>
+<body>
+<pre id="out">把本文件复制到站点根目录后，通过 http(s) 打开即可自检。
+若放在 /repo/ 子路径下，所有资源仍应正常加载。</pre>
+<script>
+window.__ERRS=[];
+window.addEventListener('error',function(e){window.__ERRS.push(e.message+' @ '+(e.filename||''));},true);
+</script>
+<!-- 与 index.html 完全相同的相对路径依赖 -->
+<script src="../vendor/katex/katex.min.js"></script>
+<script src="../assets/js/md.js"></script>
+<script src="../assets/js/geo.js"></script>
+<script src="../assets/js/figures.js"></script>
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../content/meta.js"></script>
+<script src="../content/tags.js"></script>
+<script src="../content/ideas.js"></script>
+<script src="../content/methods.js"></script>
+<script src="../content/patterns.js"></script>
+<script src="../content/problems.js"></script>
+<script src="../assets/js/pages.js"></script>
+<script>
+setTimeout(function(){
+  const L=[];let bad=0;
+  function log(s){L.push(s);document.getElementById('out').textContent=L.join('\n');}
+  function chk(n,c,e){if(!c){bad++;log('FAIL '+n+(e?' :: '+e:''));}else log('OK   '+n);}
+  chk('protocol http(s)', /^https?:$/.test(location.protocol), location.protocol);
+  chk('all globals', ['katex','Geo','MD','Store','App','META','TAGS','IDEAS','METHODS','PATTERNS','PROBLEMS'].every(k=>!!window[k]));
+  chk('55 cards', window.App && window.App.DB.cards.length===55, window.App?String(window.App.DB.cards.length):'no App');
+  chk('9 pages', window.App && Object.keys(window.App.Pages).length===9);
+  chk('22 figures', window.Geo && Object.keys(window.Geo.registry).length===22);
+  if(window.App){
+    history.replaceState(null,'','#/card/p-hand');window.App.route();
+    const v=document.getElementById('view');
+    chk('view rendered', v && v.innerHTML.length>1000);
+    chk('katex rendered', document.querySelectorAll('.katex').length>0, String(document.querySelectorAll('.katex').length));
+    chk('svg geo drawn', document.querySelectorAll('svg.geo').length>0);
+  }
+  const abs=[...document.querySelectorAll('script[src],link[href]')]
+    .map(e=>e.getAttribute('src')||e.getAttribute('href')).filter(u=>u&&u.charAt(0)==='/');
+  chk('no absolute root urls', abs.length===0, abs.join(','));
+  chk('no runtime errors', window.__ERRS.length===0, window.__ERRS.join(' | '));
+  log('---'); log('FAIL='+bad);
+  document.title='SUBPATH_'+bad;
+},700);
+</script>
+</body></html>

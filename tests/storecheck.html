@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>Store检查</title></head>
+<body><pre id="out">running...</pre>
+<script src="../assets/js/store.js"></script>
+<script>
+(function () {
+  const L = []; let bad = 0;
+  function log(s) { L.push(s); document.getElementById('out').textContent = L.join('\n'); }
+  function chk(n, c, e) { if (!c) { bad++; log('FAIL ' + n + (e ? ' :: ' + e : '')); } else log('OK   ' + n); }
+  const S = window.Store;
+
+  S.reset();
+  chk('default tier=2', S.s.tier === 2);
+  chk('today format', /^\d{4}-\d{2}-\d{2}$/.test(S.today()), S.today());
+
+  /* SRS：新卡评「会」→ 1 天 */
+  let r = S.review('p-hand', 3);
+  chk('new known -> 1 day', r.ivl === 1, 'ivl=' + r.ivl);
+  chk('known reps=1', r.reps === 1);
+  chk('due is future', r.due > S.today(), r.due);
+  chk('mark=known', S.s.marks['p-hand'] === 'known');
+  r = S.review('p-hand', 3);
+  chk('2nd known -> 3 days', r.ivl === 3, 'ivl=' + r.ivl);
+  r = S.review('p-hand', 3);
+  chk('3rd known -> grows', r.ivl > 3, 'ivl=' + r.ivl);
+
+  /* 评「不会」→ 归零、lapse+1 */
+  S.reset();
+  S.review('p-hand', 3); S.review('p-hand', 3);
+  r = S.review('p-hand', 1);
+  chk('fail -> ivl=0', r.ivl === 0, 'ivl=' + r.ivl);
+  chk('fail -> reps=0', r.reps === 0);
+  chk('fail -> lapses=1', r.lapses === 1);
+  chk('due=today', r.due === S.today(), r.due);
+
+  /* 评「模糊」→ 缩短 */
+  S.reset();
+  S.review('p-hand', 3); S.review('p-hand', 3); S.review('p-hand', 3);
+  const before = S.s.srs['p-hand'].ivl;
+  const easeBefore = S.s.srs['p-hand'].ease;
+  r = S.review('p-hand', 2);
+  chk('fuzzy shortens', r.ivl < before, before + ' -> ' + r.ivl);
+  chk('fuzzy ease drops', r.ease < easeBefore, easeBefore + ' -> ' + r.ease);
+
+  /* dueCards */
+  S.reset();
+  let due = S.dueCards(['a','b','c']);
+  chk('all new are due', due.length === 3);
+  S.review('a', 3);
+  due = S.dueCards(['a','b','c']);
+  chk('reviewed known not due today', due.length === 2, due.map(x=>x.id).join(','));
+  S.review('b', 1);
+  due = S.dueCards(['a','b','c']);
+  chk('failed card due again today', due.length === 2 && due.some(x=>x.id==='b'), due.map(x=>x.id).join(','));
+
+  /* 错因 */
+  S.reset();
+  S.addWrong('p-hand','blind','pr-01');
+  chk('wrong recorded', S.s.wrongs.length === 1);
+  S.addWrong('p-hand','blind','pr-01');
+  chk('same-day dedup', S.s.wrongs.length === 1);
+  S.addWrong('p-hand','calc','pr-01');
+  chk('different type kept', S.s.wrongs.length === 2);
+  const ws = S.wrongStats();
+  chk('wrongStats byCard', ws['p-hand'].total === 2 && ws['p-hand'].byType.blind === 1);
+  chk('ERROR_TYPES=4', S.ERROR_TYPES.length === 4);
+
+  /* 打卡与连续天数 */
+  S.reset();
+  chk('not done initially', !S.isDone('drill'));
+  S.markDone('drill');
+  chk('markDone', S.isDone('drill'));
+  S.markDone('drill');
+  chk('markDone idempotent', S.s.daily[S.today()].done.length === 1);
+  chk('streak>=1', S.streak() >= 1, String(S.streak()));
+
+  /* 导入导出 */
+  S.reset(); S.review('p-hand',3); S.addWrong('p-midline','know');
+  const json = S.exportJSON();
+  chk('export non-empty', json.length > 50);
+  S.reset();
+  chk('reset clears', Object.keys(S.s.srs).length === 0 && S.s.wrongs.length === 0);
+  S.importJSON(json);
+  chk('import restores', S.s.srs['p-hand'] && S.s.wrongs.length === 1);
+
+  log('---'); log('FAIL=' + bad);
+  document.title = 'STORE_' + bad;
+})();
+</script>
+</body></html>

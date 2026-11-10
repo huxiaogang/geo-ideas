@@ -1,0 +1,16 @@
+# 内部工具与记忆（不属于站点内容）
+.deepseek-harness/
+.codebuddy/
+.workbuddy/
+
+# 临时与测试产物
+_*.txt
+_*.html
+_*.js
+!tests/_runner.ps1
+tests/_*.png
+
+# 系统文件
+Thumbs.db
+Desktop.ini
+.DS_Store

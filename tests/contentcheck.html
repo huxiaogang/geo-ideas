@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>内容校验</title></head>
+<body><pre id="out">running...</pre>
+<script src="../vendor/katex/katex.min.js"></script>
+<script src="../assets/js/md.js"></script>
+<script src="../assets/js/geo.js"></script>
+<script src="../assets/js/figures.js"></script>
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../content/meta.js"></script>
+<script src="../content/tags.js"></script>
+<script src="../content/ideas.js"></script>
+<script src="../content/methods.js"></script>
+<script src="../content/patterns.js"></script>
+<script src="../content/problems.js"></script>
+<script src="../assets/js/pages.js"></script>
+<script>
+(function () {
+  const L = []; let bad = 0, warn = 0;
+  function log(s) { L.push(s); document.getElementById('out').textContent = L.join('\n'); }
+  function chk(n, c, e) { if (!c) { bad++; log('FAIL ' + n + (e ? ' :: ' + e : '')); } else log('OK   ' + n); }
+  function wn(n, c, e) { if (!c) { warn++; log('WARN ' + n + (e ? ' :: ' + e : '')); } }
+
+  /* 本页脚本同步执行，DOMContentLoaded 尚未触发 → App.boot() 还没跑，
+     DB.cards 仍是空的。这里直接按 window.* 重建索引，与 boot 无关。 */
+  const DB = { cards: [], byId: {}, tags: window.TAGS || [] };
+  for (const c of [].concat(window.IDEAS || [], window.METHODS || [], window.PATTERNS || [], window.PROBLEMS || [])) {
+    DB.cards.push(c); DB.byId[c.id] = c;
+  }
+  window.App.DB.cards = DB.cards;
+  window.App.DB.byId = DB.byId;
+  window.App.DB.tags = DB.tags;
+  window.App.byLayer = (l) => DB.cards.filter((c) => c.layer === l);
+  const all = DB.cards;
+  const ids = new Set(all.map(c => c.id));
+  const figs = new Set(Object.keys(window.Geo.registry));
+  const tagIds = new Set((window.TAGS || []).map(t => t.id));
+  const RW = {
+    pattern: ['p-hand','p-half-angle','p-three-equal','p-double-median','p-midline','p-bisector','p-right-mid','p-cyclic','p-power','p-ptolemy','p-fermat','p-hidden-circle','p-apollonius','p-hu-bu-gui','p-claw','p-euler','p-brahmagupta','p-area-ratio','p-tangent-chord','p-harmonic'],
+    method: ['m-congruence','m-similarity','m-cyclic','m-power','m-area','m-trig','m-coord','m-menelaus','m-homothety','m-power-axis','m-inversion','m-harmonic'],
+    idea: ['i-reduce','i-transform','i-complete','i-double-count','i-algebra','i-invariant','i-symmetry']
+  };
+  const regIds = new Set([].concat(RW.pattern, RW.method, RW.idea));
+
+  log('== 规模 ==');
+  chk('IDEAS=7', (window.IDEAS || []).length === 7, String((window.IDEAS || []).length));
+  chk('METHODS=12', (window.METHODS || []).length === 12, String((window.METHODS || []).length));
+  chk('PATTERNS=20', (window.PATTERNS || []).length === 20, String((window.PATTERNS || []).length));
+  chk('PROBLEMS=16', (window.PROBLEMS || []).length === 16, String((window.PROBLEMS || []).length));
+  chk('TAGS=18', (window.TAGS || []).length === 18, String((window.TAGS || []).length));
+  chk('META.steps=4', (window.META && window.META.steps || []).length === 4);
+  chk('CARDS=55', all.length === 55, String(all.length));
+  chk('no duplicate ids', ids.size === all.length, ids.size + '/' + all.length);
+
+  log('== ID 注册表 ==');
+  const byLayer = (l) => DB.cards.filter((c) => c.layer === l);
+  for (const layer in RW) {
+    const got = new Set(byLayer(layer).map(c => c.id));
+    const missing = RW[layer].filter(x => !got.has(x));
+    const extra = Array.from(got).filter(x => !RW[layer].includes(x));
+    chk(layer + ' ids exact', missing.length === 0 && extra.length === 0,
+      'missing=' + missing.join(',') + ' extra=' + extra.join(','));
+  }
+  const prIds = (window.PROBLEMS || []).map(c => c.id).sort();
+  const expectPr = Array.from({length:16}, (_,i) => 'pr-' + String(i+1).padStart(2,'0')).sort();
+  chk('problem ids pr-01..pr-16', JSON.stringify(prIds) === JSON.stringify(expectPr), prIds.join(','));
+
+  log('== 通用字段 ==');
+  const base = ['id','layer','title','short','tier','tags','body'];
+  let missBase = [];
+  for (const c of all) for (const k of base) if (!c[k] || (Array.isArray(c[k]) && !c[k].length)) missBase.push(c.id + '.' + k);
+  chk('base fields present', missBase.length === 0, missBase.slice(0,8).join(' | '));
+  let badTier = all.filter(c => !Array.isArray(c.tier) || c.tier.some(n => ![1,2,3].includes(n)));
+  chk('tier valid', badTier.length === 0, badTier.map(c=>c.id).join(','));
+  let badTag = all.filter(c => (c.tags || []).some(t => !tagIds.has(t)));
+  chk('tags no out-of-registry', badTag.length === 0, badTag.map(c=>c.id).join(','));
+
+  log('== 各层专属字段 ==');
+  const need = {
+    idea: ['motto','steps','fail'],
+    method: ['when','action','tools'],
+    pattern: ['signals','identify','action','conclusions','gen','tools','figure','traps'],
+    problem: ['statement','answer','hints','decision','discard','variants','patterns','methods','figure','traps']
+  };
+  for (const layer in need) {
+    let miss = [];
+    for (const c of byLayer(layer)) for (const k of need[layer])
+      if (!c[k] || (Array.isArray(c[k]) && !c[k].length)) miss.push(c.id + '.' + k);
+    chk(layer + ' fields present', miss.length === 0, miss.slice(0,6).join(' | '));
+  }
+
+  log('== 引用完整性 ==');
+  let dangling = [], pending = [];
+  const refFields = ['tools','patterns','methods','related','ideas'];
+  const prIdsOk = new Set(Array.from({length:16}, (_,i)=>'pr-'+String(i+1).padStart(2,'0')));
+  for (const c of all) for (const k of refFields)
+    for (const r of (c[k] || [])) {
+      if (ids.has(r)) continue;
+      if (prIdsOk.has(r)) { pending.push(c.id + '.' + k + '->' + r); continue; }  // 例题尚未生成
+      if (!regIds.has(r)) dangling.push(c.id + '.' + k + '->' + r);
+    }
+  chk('no dangling card refs', dangling.length === 0, dangling.slice(0,8).join(' | '));
+  if (pending.length) log('     （' + pending.length + ' 处引用指向待生成的例题，内容齐后自动消除）');
+
+  let badFig = all.filter(c => c.figure && !figs.has(c.figure));
+  chk('figure exists', badFig.length === 0, badFig.map(c=>c.id+':'+c.figure).join(','));
+  const patFigs = (window.PATTERNS || []).filter(c => !c.figure);
+  chk('every pattern has figure', patFigs.length === 0, patFigs.map(c=>c.id).join(','));
+
+  let badTagRef = [];
+  for (const t of (window.TAGS || [])) {
+    for (const r of [].concat(t.first || [], t.also || [])) if (!regIds.has(r)) badTagRef.push(t.id + '->' + r);
+    if (!['点','线','角','圆','长度','面积','最值','位置','证明目标'].includes(t.group)) badTagRef.push(t.id + ' group=' + t.group);
+    for (const k of ['id','label','group','desc','hint','first','also','why']) if (!t[k]) badTagRef.push(t.id + ' missing ' + k);
+  }
+  chk('tags refs/groups/fields', badTagRef.length === 0, badTagRef.slice(0,8).join(' | '));
+
+  log('== 例题结构 ==');
+  for (const c of (window.PROBLEMS || [])) {
+    const lv = (c.hints || []).map(h => h.level);
+    if (JSON.stringify(lv) !== JSON.stringify(['观察','联想','构造','主链','完整解']))
+      chk(c.id + ' hint levels', false, lv.join('/'));
+    if (!c.decision || c.decision.length < 60) chk(c.id + ' decision substantive', false, 'len=' + (c.decision||'').length);
+  }
+  chk('all problems 5-level hints + decision', (window.PROBLEMS || []).every(c =>
+    (c.hints||[]).length === 5 && (c.hints||[]).map(h=>h.level).join('/') === '观察/联想/构造/主链/完整解' &&
+    c.decision && c.decision.length >= 60 && (c.discard||[]).length >= 1 && (c.variants||[]).length >= 1));
+
+  log('== 公式可解析（KaTeX） ==');
+  let texBad = [];
+  for (const c of all) {
+    const src = [c.body, c.statement, c.answer, c.action, c.identify, c.decision, (c.conclusions||[]).join(' ')].join('\n');
+    const tex = src.match(/\$\$?([\s\S]+?)\$\$?/g) || [];
+    for (const t of tex) {
+      const body = t.replace(/^\$\$?|\$\$?$/g, '');
+      try {
+        const out = window.katex.renderToString(body, {throwOnError:true, strict:false, trust:false});
+        if (!out) texBad.push(c.id + ' empty');
+      } catch (e) { texBad.push(c.id + ' :: ' + body.slice(0,40) + ' :: ' + e.message.slice(0,60)); }
+    }
+  }
+  chk('all LaTeX parses', texBad.length === 0, texBad.slice(0,6).join(' | '));
+
+  log('== 禁止反引号（正文） ==');
+  let bt = [];
+  for (const c of all) {
+    const src = [c.body, c.statement, c.answer, c.short, c.action, c.identify, c.decision, (c.signals||[]).join(' '), (c.traps||[]).join(' ')].join('');
+    if (src.includes('`')) bt.push(c.id);
+  }
+  chk('no backticks in content', bt.length === 0, bt.join(','));
+
+  log('== LaTeX 反斜杠未被模板字符串吞掉 ==');
+  /* 被吞的典型痕迹：\angle→"angle "，\frac→换页+"rac{"，\triangle→"triangle "，
+     \circ→"circ"，\perp→"perp"，\times→制表+"imes"，\sqrt→"sqrt" 等。
+     只在 $...$ 公式内部检测，避免误伤中文正文里的普通英文词。 */
+  let swallowed = [];
+  const badTokens = /\b(angle|frac|triangle|circ|perp|cong|parallel|sqrt|cdot|times|sum|sin|cos|tan|Rightarrow|infty|alpha|beta|gamma|delta|theta|lambda|mu|pi|omega)\b/;
+  for (const c of all) {
+    const fields = { body:c.body, statement:c.statement, answer:c.answer, action:c.action,
+      identify:c.identify, decision:c.decision, short:c.short,
+      signals:(c.signals||[]).join(' '), traps:(c.traps||[]).join(' '),
+      conclusions:(c.conclusions||[]).join(' '), variants:(c.variants||[]).join(' '),
+      discard:(c.discard||[]).join(' '), hints:(c.hints||[]).map(x=>x.text).join(' ') };
+    for (const k in fields) {
+      const src = fields[k] || '';
+      const formulas = src.match(/\$+[\s\S]*?\$+/g) || [];
+      for (const fm of formulas) {
+        if (/\\/.test(fm)) continue;              // 含合法反斜杠
+        const inner = fm.replace(/^\$+|\$+$/g, '');
+        if (badTokens.test(inner)) swallowed.push(c.id + '.' + k + '::' + inner.slice(0, 40));
+      }
+      /* 控制字符也不该出现在正文里（\n \t \f \b 被吞的痕迹） */
+      if (/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(src)) swallowed.push(c.id + '.' + k + '::控制字符');
+    }
+  }
+  chk('LaTeX backslashes intact', swallowed.length === 0, swallowed.slice(0, 8).join(' | '));
+
+  log('== 公式渲染实测 ==');
+  let renderBad = [];
+  for (const c of all) {
+    const html = window.MD.render([c.body, c.statement, c.answer, c.action, c.identify].join('\n\n'));
+    if (/tex-fallback/.test(html)) renderBad.push(c.id);
+  }
+  chk('no KaTeX fallback in rendered cards', renderBad.length === 0, renderBad.slice(0,8).join(','));
+
+  log('== 质量提示（非阻断） ==');
+  const weakAction = (window.PATTERNS || []).filter(c => /作辅助线|适当添加|添加辅助线|作一条/.test(c.action || ''));
+  wn('pattern action all concrete', weakAction.length === 0, weakAction.map(c=>c.id).join(','));
+  const weakDecision = (window.PROBLEMS || []).filter(c => /仔细观察|由条件可知|显而易见/.test(c.decision || ''));
+  wn('decision no filler', weakDecision.length === 0, weakDecision.map(c=>c.id).join(','));
+  const shortBody = all.filter(c => (c.body || '').length < 150);
+  wn('all bodies >=150 chars', shortBody.length === 0, shortBody.map(c=>c.id).join(','));
+
+  log('---');
+  log('FAIL=' + bad + ' WARN=' + warn);
+  document.title = 'CONTENT_' + bad + '_' + warn;
+})();
+</script>
+</body></html>

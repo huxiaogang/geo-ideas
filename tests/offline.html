@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>离线检查</title></head>
+<body><pre id="out">running...</pre>
+<script>
+window.__ERRS=[];
+window.addEventListener('error',function(e){window.__ERRS.push(e.message);},true);
+</script>
+<script src="../vendor/katex/katex.min.js"></script>
+<script src="../assets/js/md.js"></script>
+<script src="../assets/js/geo.js"></script>
+<script src="../assets/js/figures.js"></script>
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../content/meta.js"></script>
+<script src="../content/tags.js"></script>
+<script src="../content/ideas.js"></script>
+<script src="../content/methods.js"></script>
+<script src="../content/patterns.js"></script>
+<script src="../content/problems.js"></script>
+<script src="../assets/js/pages.js"></script>
+<script>
+(function(){
+  const L=[];let bad=0;
+  function log(s){L.push(s);document.getElementById('out').textContent=L.join('\n');}
+  function chk(n,c,e){if(!c){bad++;log('FAIL '+n+(e?' :: '+e:''));}else log('OK   '+n);}
+  setTimeout(function(){
+    chk('protocol is file:', location.protocol==='file:', location.protocol);
+    chk('no external stylesheets', !document.querySelector('link[href^="http"]'));
+    chk('no external scripts', !document.querySelector('script[src^="http"]'));
+    chk('katex local', !!window.katex);
+    chk('all 6 globals loaded', ['Geo','MD','Store','App','META','TAGS'].every(k=>!!window[k]));
+    chk('all content globals', ['IDEAS','METHODS','PATTERNS','PROBLEMS'].every(k=>window[k]&&window[k].length));
+    chk('cards indexed = 55', window.App.DB.cards.length===55, String(window.App.DB.cards.length));
+    chk('9 pages registered', Object.keys(window.App.Pages).length===9, String(Object.keys(window.App.Pages).length));
+    chk('22 figures', Object.keys(window.Geo.registry).length===22, String(Object.keys(window.Geo.registry).length));
+    /* 渲染首页并检查图形真的出现 */
+    const v=document.getElementById('view');
+    chk('view rendered', v && v.innerHTML.length>1000, v?String(v.innerHTML.length):'no view');
+    chk('svg geo drawn', document.querySelectorAll('svg.geo').length>0, String(document.querySelectorAll('svg.geo').length));
+    /* 公式在卡片详情里：切到一张含公式的图形卡验证 KaTeX 真的渲染 */
+    history.replaceState(null,'','#/card/p-hand'); window.App.route();
+    chk('katex renders in detail card', document.querySelectorAll('.katex').length>0,
+      String(document.querySelectorAll('.katex').length));
+    chk('detail svg geo drawn', document.querySelectorAll('svg.geo').length>0);
+    chk('no runtime errors', window.__ERRS.length===0, window.__ERRS.join(' | '));
+    log('---'); log('FAIL='+bad);
+    document.title='OFFLINE_'+bad;
+  },500);
+})();
+</script>
+</body></html>

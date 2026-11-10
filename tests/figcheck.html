@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>图形自检</title></head>
+<body>
+<pre id="out">running...</pre>
+<script src="../assets/js/geo.js"></script>
+<script src="../assets/js/figures.js"></script>
+<script>
+(function () {
+  const lines = [];
+  let fail = 0, total = 0;
+  for (const id of Object.keys(Geo.registry)) {
+    try {
+      const cfg = Geo.registry[id];
+      const fig = new Geo.Fig(cfg);
+      cfg.build(fig);
+      fig.solve();
+      const bad = fig.validate();
+      total += fig.checks.length;
+      if (bad.length) {
+        fail += bad.length;
+        lines.push('FAIL ' + id + ' :: ' + bad.map((b) => b.label).join(' | '));
+      } else {
+        lines.push('OK   ' + id + ' (' + fig.checks.length + ' checks)');
+      }
+    } catch (e) {
+      fail++;
+      lines.push('ERROR ' + id + ' :: ' + e.message + ' @ ' + (e.stack || '').split('\n')[1]);
+    }
+  }
+  lines.push('---');
+  lines.push('TOTAL=' + total + ' FAIL=' + fail + ' FIGS=' + Object.keys(Geo.registry).length);
+  document.getElementById('out').textContent = lines.join('\n');
+  document.title = 'FIGCHECK_' + fail;
+})();
+</script>
+</body></html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="面向初中数学竞赛生的平面几何解题思想训练站：基本图形为纲、变换为生成器，可拖动几何图、解题罗盘反查、阶梯提示、间隔重复。">
+  <meta name="color-scheme" content="light dark">
+  <title>平面几何·解题思想</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+
+  <!-- 依赖顺序说明（file:// 下用普通脚本，不用 ES module）：
+       1) 第三方渲染：KaTeX
+       2) 基础设施：Markdown / 几何引擎 / 图形库 / 状态
+       3) 站点外壳 app.js（定义 window.App，并注册 DOMContentLoaded 启动）
+       4) 内容数据（普通脚本，挂到 window.*）
+       5) 页面 pages.js（读取 window.App 注册所有页面）
+       6) app.js 的 boot() 在 DOMContentLoaded 时执行 —— 此时上面全部就绪
+  -->
+
+  <script src="vendor/katex/katex.min.js"></script>
+
+  <script src="assets/js/md.js"></script>
+  <script src="assets/js/geo.js"></script>
+  <script src="assets/js/figures.js"></script>
+  <script src="assets/js/store.js"></script>
+
+  <script src="assets/js/app.js"></script>
+
+  <script src="content/meta.js"></script>
+  <script src="content/tags.js"></script>
+  <script src="content/ideas.js"></script>
+  <script src="content/methods.js"></script>
+  <script src="content/patterns.js"></script>
+  <script src="content/problems.js"></script>
+
+  <script src="assets/js/pages.js"></script>
+
+  <noscript>
+    <div style="max-width:640px;margin:60px auto;font-family:sans-serif;line-height:1.8;padding:20px">
+      <h1>需要启用 JavaScript</h1>
+      <p>本站的几何图、公式与训练功能都在浏览器本地运行，请开启 JavaScript 后刷新。</p>
+    </div>
+  </noscript>
+</body>
+</html>

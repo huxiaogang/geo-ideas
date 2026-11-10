@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>罗盘测试</title></head>
+<body><pre id="out">running...</pre>
+<script src="../vendor/katex/katex.min.js"></script>
+<script src="../assets/js/md.js"></script>
+<script src="../assets/js/geo.js"></script>
+<script src="../assets/js/figures.js"></script>
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../content/meta.js"></script>
+<script src="../content/tags.js"></script>
+<script src="../content/ideas.js"></script>
+<script src="../content/methods.js"></script>
+<script src="../content/patterns.js"></script>
+<script src="../content/problems.js"></script>
+<script src="../assets/js/pages.js"></script>
+<script>
+(function () {
+  const L = []; let bad = 0;
+  function log(s) { L.push(s); document.getElementById('out').textContent = L.join('\n'); }
+  function chk(n, c, e) { if (!c) { bad++; log('FAIL ' + n + (e ? ' :: ' + e : '')); } else log('OK   ' + n); }
+
+  function go(hash) {
+    history.replaceState(null, '', hash);
+    window.App.route();
+  }
+
+  setTimeout(function () {
+    go('#/compass');
+    const box = document.querySelector('#tagbox');
+    const hits = document.querySelector('#hits');
+    chk('compass rendered', !!box && !!hits);
+    chk('18 tag buttons', box && box.querySelectorAll('.tag-pick').length === 18,
+      box ? String(box.querySelectorAll('.tag-pick').length) : 'no box');
+    chk('quick starts present', hits && hits.querySelectorAll('[data-quick]').length === 8,
+      hits ? String(hits.querySelectorAll('[data-quick]').length) : 'no hits');
+
+    /* 勾选「出现中点」→ 第一位应是倍长中线或中位线 */
+    const mid = box.querySelector('[data-tag="mid"]');
+    mid.click();
+    const first = hits.querySelector('.hit h3 a');
+    chk('mid -> first hit is a midpoint model', first && /倍长中线|中位线|直角三角形斜边中线/.test(first.textContent),
+      first ? first.textContent : 'none');
+    chk('mid -> hit has reason', !!hits.querySelector('.hit .why'));
+    chk('mid -> has 第一步', /第一步/.test(hits.textContent));
+    log('     top3: ' + Array.from(hits.querySelectorAll('.hit h3 a')).slice(0,3).map(a=>a.textContent.trim()).join(' | '));
+
+    /* 再加「共顶点旋转」 */
+    const rot = box.querySelector('[data-tag="rotate"]');
+    rot.click();
+    const titles = Array.from(hits.querySelectorAll('.hit h3 a')).map(a=>a.textContent.trim());
+    chk('rotate -> 手拉手 ranked high', titles.slice(0,4).some(t=>/手拉手/.test(t)),
+      titles.slice(0,4).join(' | '));
+    log('     top4: ' + titles.slice(0,4).join(' | '));
+
+    /* 清空 */
+    document.querySelector('#clr').click();
+    chk('clear restores empty state', /先勾几个条件/.test(hits.textContent));
+
+    /* 自由文本检索 */
+    const ft = document.querySelector('#freetext');
+    ft.value = '角平分线';
+    ft.dispatchEvent(new Event('input'));
+    chk('free text produces hits', hits.querySelectorAll('.hit').length > 0,
+      String(hits.querySelectorAll('.hit').length));
+
+    log('---'); log('FAIL=' + bad);
+    document.title = 'COMPASS_' + bad;
+  }, 400);
+})();
+</script>
+</body></html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>file协议检查</title></head>
+<body><pre id="out">running...</pre>
+<script>
+window.__ERRS = [];
+window.addEventListener('error', function (e) { window.__ERRS.push(e.message + ' @ ' + (e.filename||'') + ':' + (e.lineno||'')); }, true);
+</script>
+<script src="../vendor/katex/katex.min.js"></script>
+<script src="../assets/js/md.js"></script>
+<script src="../assets/js/geo.js"></script>
+<script src="../assets/js/figures.js"></script>
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../content/meta.js"></script>
+<script src="../content/tags.js"></script>
+<script src="../content/ideas.js"></script>
+<script src="../content/methods.js"></script>
+<script src="../content/patterns.js"></script>
+<script src="../content/problems.js"></script>
+<script src="../assets/js/pages.js"></script>
+<script>
+setTimeout(function () {
+  const L = [];
+  function log(s) { L.push(s); document.getElementById('out').textContent = L.join('\n'); }
+  log('protocol=' + location.protocol);
+  log('scripts loaded: katex=' + !!window.katex + ' Geo=' + !!window.Geo + ' MD=' + !!window.MD +
+      ' Store=' + !!window.Store + ' App=' + !!window.App + ' META=' + !!window.META +
+      ' TAGS=' + (window.TAGS ? window.TAGS.length : 0) + ' IDEAS=' + (window.IDEAS ? window.IDEAS.length : 0) +
+      ' METHODS=' + (window.METHODS ? window.METHODS.length : 0) + ' PATTERNS=' + (window.PATTERNS ? window.PATTERNS.length : 0) +
+      ' PROBLEMS=' + (window.PROBLEMS ? window.PROBLEMS.length : 0));
+  log('cards=' + (window.App ? window.App.DB.cards.length : 0));
+  log('pages=' + (window.App ? Object.keys(window.App.Pages).length : 0));
+  const v = document.getElementById('view');
+  log('viewLen=' + (v ? v.innerHTML.replace(/<[^>]+>/g,'').trim().length : 'NO VIEW'));
+  log('svgCount=' + document.querySelectorAll('svg.geo').length);
+  log('katexCount=' + document.querySelectorAll('.katex').length);
+  log('errors=' + window.__ERRS.length + (window.__ERRS.length ? ' :: ' + window.__ERRS.join(' | ') : ''));
+  document.title = 'FILE_' + window.__ERRS.length;
+}, 500);
+</script>
+</body></html>

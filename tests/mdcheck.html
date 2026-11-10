@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../vendor/katex/katex.min.css">
+<title>MD检查</title></head>
+<body><pre id="out">running...</pre><div id="host"></div>
+<script src="../vendor/katex/katex.min.js"></script>
+<script src="../assets/js/md.js"></script>
+<script>
+(function () {
+  const L = [];
+  function log(s) { L.push(s); document.getElementById('out').textContent = L.join('\n'); }
+  let bad = 0;
+  function chk(name, cond, extra) { if (!cond) { bad++; log('FAIL ' + name + (extra ? ' :: ' + extra : '')); } else log('OK   ' + name); }
+
+  chk('katex loaded', !!window.katex);
+  const k = window.MD.katexRender('\\frac{AB}{AC}=\\frac{BD}{DC}', false);
+  chk('katex inline renders', /katex/.test(k) && !/tex-fallback/.test(k));
+  const kd = window.MD.katexRender('EF=BE+DF', true);
+  chk('katex display renders', /katex-display/.test(kd));
+
+  const src = [
+    '## 识别信号',
+    '',
+    '看到 **共顶点** 且 $AB=AC$，先想 [[p-hand|手拉手模型]]。',
+    '',
+    '- 第一点',
+    '- 第二点 $\\angle BAC=46^\\circ$',
+    '  - 子项',
+    '',
+    '$$EF=BE+DF$$',
+    '',
+    '| 条件 | 结论 |',
+    '|---|---|',
+    '| 中点 | 倍长 |',
+    '| 角平分线 | 比例 |',
+    '',
+    '> 这是引用',
+    '',
+    '```',
+    'code line',
+    '```'
+  ].join('\n');
+  const html = window.MD.render(src);
+  document.getElementById('host').innerHTML = html;
+  chk('h2', /class="md-h"/.test(html));
+  chk('bold', /<strong>共顶点<\/strong>/.test(html));
+  chk('inline math', /katex/.test(html));
+  chk('display math', /math-block/.test(html) && /katex-display/.test(html));
+  chk('internal link', /#\/card\/p-hand/.test(html) && /手拉手模型/.test(html));
+  chk('list + sub', /class="sub"/.test(html));
+  chk('table', /md-table/.test(html) && /<th>条件<\/th>/.test(html));
+  chk('blockquote', /<blockquote>/.test(html));
+  chk('code block', /class="code"/.test(html));
+  chk('no raw math delimiters', !/\$\$/.test(html) && !/\$AB/.test(html));
+  chk('plain() strips', /看到 共顶点/.test(window.MD.plain(src)) && !/\$\$/.test(window.MD.plain(src)));
+
+  /* 公式内不应被 inline 规则破坏 */
+  const tricky = window.MD.render('设 $a*b*c$ 与 $x_1^2$，以及 $$\\sum_{i=1}^n i$$。');
+  chk('math not mangled by inline rules', (tricky.match(/katex/g) || []).length >= 3, tricky.slice(0, 160));
+
+  log('---');
+  log('FAIL=' + bad);
+  document.title = 'MD_' + bad;
+})();
+</script>
+</body></html>

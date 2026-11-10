@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>冒烟测试</title></head>
+<body>
+<pre id="out">running...</pre>
+<div id="view-host" style="display:none"></div>
+<script>
+/* 捕获所有错误（包括脚本加载错误之外的运行时异常） */
+window.__ERRS = [];
+window.addEventListener('error', function (e) { window.__ERRS.push('ERROR: ' + e.message); });
+window.addEventListener('unhandledrejection', function (e) { window.__ERRS.push('REJECT: ' + e.reason); });
+</script>
+
+<script src="../vendor/katex/katex.min.js"></script>
+<script src="../assets/js/md.js"></script>
+<script src="../assets/js/geo.js"></script>
+<script src="../assets/js/figures.js"></script>
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/app.js"></script>
+
+<!-- 真实内容（若文件不存在会 404，但下面会补桩数据） -->
+<script src="../content/meta.js"></script>
+<script src="../content/tags.js"></script>
+<script src="../content/ideas.js"></script>
+<script src="../content/methods.js"></script>
+<script src="../content/patterns.js"></script>
+<script src="../content/problems.js"></script>
+
+<script>
+/* 桩数据：只在真实内容缺失时生效，保证骨架可独立验证 */
+(function () {
+  if (!window.META) window.META = {
+    steps: [
+      { key:'识图', title:'识图', desc:'把图形拆成基本图形', question:'由哪些基本图形拼成？' },
+      { key:'生成', title:'生成', desc:'用变换造出缺的图形', question:'怎么造？' },
+      { key:'落地', title:'落地', desc:'选工具论证计算', question:'用哪套工具？' },
+      { key:'验算', title:'验算', desc:'极端位置检验', question:'退化时成立吗？' }
+    ],
+    tiers: {1:'培优',2:'联赛',3:'自招'}, layerNames: {idea:'思想',method:'方法',pattern:'基本图形',problem:'例题'},
+    moto:'把直觉拆成可检索的动作', intro:'这里不堆题，只训练一件事：看到图形，第一步该想什么。'
+  };
+  if (!window.TAGS || !window.TAGS.length) window.TAGS = [
+    {id:'mid',label:'出现中点',group:'点',desc:'题干出现中点',hint:'倍长或中位线',first:['p-double-median'],also:['m-congruence'],why:'中点自带 1:1'},
+    {id:'rotate',label:'共顶点旋转',group:'位置',desc:'两个等腰共顶点',hint:'手拉手',first:['p-hand'],also:[],why:'旋转造全等'},
+    {id:'equal-len',label:'两线段相等',group:'长度',desc:'要证线段相等',hint:'找全等',first:['p-hand'],also:['m-congruence'],why:'全等得等长'},
+    {id:'prove-equal',label:'证相等',group:'证明目标',desc:'求证相等',hint:'全等或相似',first:['p-hand'],also:[],why:'转化目标'}
+  ];
+  const mk = function (id, layer, title, extra) {
+    return Object.assign({
+      id:id, layer:layer, title:title, short:'桩数据：'+title, tier:[1,2,3], tags:['mid'],
+      figure:'fig-hand-in-hand', signals:['共顶点','两等腰','要证相等'],
+      identify:'看到 X 想到 Y', action:'连 BD、CE', conclusions:['BD=CE'],
+      body:'## 说明\n\n这是桩数据。\n\n- 要点一 $AB=AC$\n- 要点二 $$EF=BE+DF$$',
+      traps:['顶角不等时只能得相似'], gen:['rotate'], tools:['m-congruence'],
+      source:'测试', statement:'已知 $\\triangle ABC$。求证 $AB=AC$。', answer:'## 解\n\n由全等得证。',
+      decision:'先试旋转，因为共顶点；放弃坐标法，因为根号过多。', discard:['坐标法：化简量大'],
+      variants:['换 60 度','升一档加根轴'], patterns:['p-hand'], methods:['m-congruence'],
+      hints:[{level:'观察',title:'找共顶点',text:'图里有什么？'},{level:'联想',title:'想手拉手',text:'[[p-hand]]'},
+             {level:'构造',title:'连 BD CE',text:'连 $BD$、$CE$'},{level:'主链',title:'证全等',text:'$\\triangle ABD\\cong\\triangle ACE$'},
+             {level:'完整解',title:'得证',text:'故 $BD=CE$'}]
+    }, extra || {});
+  };
+  if (!window.IDEAS || !window.IDEAS.length) window.IDEAS = [1,2,3,4,5,6,7].map(function(i){return mk('i-'+i,'idea','思想'+i);});
+  if (!window.METHODS || !window.METHODS.length) window.METHODS = [1,2,3,4,5,6,7,8,9,10,11,12].map(function(i){return mk('m-'+i,'method','方法'+i);});
+  if (!window.PATTERNS || !window.PATTERNS.length) window.PATTERNS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20].map(function(i){return mk('p-'+i,'pattern','图形'+i);});
+  if (!window.PROBLEMS || !window.PROBLEMS.length) window.PROBLEMS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16].map(function(i){return mk('pr-'+String(i).padStart(2,'0'),'problem','例题'+i);});
+  window.__STUB = !(window.IDEAS && window.IDEAS[0] && /思想/.test(window.IDEAS[0].title) === false);
+})();
+</script>
+
+<script src="../assets/js/pages.js"></script>
+
+<script>
+(function () {
+  const lines = [];
+  const out = document.getElementById('out');
+  function log(s) { lines.push(s); out.textContent = lines.join('\n'); }
+
+  /* app.js 在 DOMContentLoaded 时 boot；这里已在其后，手动确保只 boot 一次 */
+  function run() {
+    const routes = [
+      '#/', '#/compass', '#/patterns', '#/methods', '#/ideas', '#/problems',
+      '#/drill', '#/review', '#/wrongs', '#/map', '#/about',
+      '#/card/p-hand', '#/card/pr-01', '#/card/i-1', '#/card/m-1'
+    ];
+    let bad = 0;
+    /* 用真实内容里的第一个 id 做详情测试 */
+    const first = {
+      pattern: window.PATTERNS[0] && window.PATTERNS[0].id,
+      problem: window.PROBLEMS[0] && window.PROBLEMS[0].id,
+      idea: window.IDEAS[0] && window.IDEAS[0].id,
+      method: window.METHODS[0] && window.METHODS[0].id
+    };
+    const list = routes.slice(0, 11).concat([
+      '#/card/' + first.pattern, '#/card/' + first.problem,
+      '#/card/' + first.idea, '#/card/' + first.method
+    ]);
+    let idx = 0;
+    function step() {
+      if (idx >= list.length) {
+        log('---');
+        log('PAGES=' + list.length + ' ERRORS=' + window.__ERRS.length + ' FAIL=' + bad);
+        if (window.__ERRS.length) log(window.__ERRS.join('\n'));
+        document.title = 'SMOKE_' + (window.__ERRS.length + bad);
+        return;
+      }
+      const hash = list[idx];
+      const before = window.__ERRS.length;
+      history.replaceState(null, '', hash);
+      if (window.App && window.App.route) window.App.route();
+      setTimeout(function () {
+        const view = document.getElementById('view');
+        const html = view ? view.innerHTML : '';
+        const textLen = html.replace(/<[^>]+>/g, '').trim().length;
+        const newErr = window.__ERRS.slice(before);
+        const ok = view && textLen > 30 && !/页面渲染出错|找不到这张卡|没有这个页面/.test(html) && newErr.length === 0;
+        if (!ok) bad++;
+        log((ok ? 'OK   ' : 'FAIL ') + hash + ' len=' + textLen + (newErr.length ? ' err=' + newErr.join('|') : ''));
+        idx++;
+        step();
+      }, 60);
+    }
+    step();
+  }
+
+  if (document.readyState === 'complete') setTimeout(run, 50);
+  else window.addEventListener('load', function () { setTimeout(run, 50); });
+})();
+</script>
+</body></html>

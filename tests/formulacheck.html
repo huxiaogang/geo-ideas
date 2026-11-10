@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../vendor/katex/katex.min.css">
+<title>公式渲染检查</title></head>
+<body><pre id="out">running...</pre>
+<script>
+window.__ERRS=[];window.addEventListener('error',function(e){window.__ERRS.push(e.message);});
+</script>
+<script src="../vendor/katex/katex.min.js"></script>
+<script src="../assets/js/md.js"></script>
+<script src="../assets/js/geo.js"></script>
+<script src="../assets/js/figures.js"></script>
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../content/meta.js"></script>
+<script src="../content/tags.js"></script>
+<script src="../content/ideas.js"></script>
+<script src="../content/methods.js"></script>
+<script src="../content/patterns.js"></script>
+<script src="../content/problems.js"></script>
+<script src="../assets/js/pages.js"></script>
+<script>
+(function(){
+  const L=[];let bad=0;
+  function log(s){L.push(s);document.getElementById('out').textContent=L.join('\n');}
+  function chk(n,c,e){if(!c){bad++;log('FAIL '+n+(e?' :: '+e:''));}else log('OK   '+n);}
+  function go(h){history.replaceState(null,'',h);window.App.route();}
+  /* 裸 LaTeX 痕迹：反斜杠命令出现在可见文本里（KaTeX 渲染后会变成 .katex 元素） */
+  function nakedLatex(el){
+    if(!el) return false;
+    const t=el.textContent||'';
+    return /\\[a-zA-Z]{3,}/.test(t) || /\$[^$]+\$/.test(t);
+  }
+
+  setTimeout(function(){
+    /* 1. inlineRender 本身 */
+    const ir=window.MD.inlineRender('看到 $AB=AC$ 且 $\\triangle ABD \\cong \\triangle ACE$');
+    chk('inlineRender produces katex', /katex/.test(ir), ir.slice(0,120));
+    chk('inlineRender no raw dollar', !/\$AB/.test(ir), ir.slice(0,120));
+    chk('inlineRender no block tags', !/<p>|<div|<\/ul>/i.test(ir), ir.slice(0,120));
+    chk('inlineRender escapes html', /&lt;/.test(window.MD.inlineRender('<b>x</b>')));
+    /* 独占一行的行内公式不应被当成 $$ 块公式居中 */
+    const one=window.MD.render('$BD = CE$');
+    chk('single-line inline math stays inline', !/math-block|katex-display/.test(one), one.slice(0,160));
+    chk('single-line inline math still katex', /katex/.test(one));
+    const blk=window.MD.render('$$EF=BE+DF$$');
+    chk('$$ still produces display block', /math-block/.test(blk) && /katex-display/.test(blk));
+
+    /* 2. 所有 55 张卡的详情页：info 区不得出现裸 LaTeX */
+    let dirty=[];
+    for(const c of window.App.DB.cards){
+      go('#/card/'+c.id);
+      const info=document.querySelector('#view .card-pad');
+      const rows=document.querySelectorAll('#view .row');
+      for(const r of rows){
+        if(nakedLatex(r)) { dirty.push(c.id+' :: '+(r.textContent||'').trim().slice(0,60)); break; }
+      }
+      /* 整页可见文本里不应残留 $...$ 公式源码 */
+      const view=document.getElementById('view');
+      if(view && /\$[^$]{1,60}\$/.test(view.textContent)) dirty.push(c.id+' :: raw $ in view');
+    }
+    chk('no naked LaTeX in any card detail', dirty.length===0, dirty.slice(0,6).join(' | '));
+
+    /* 3. 具体抽查 p-hand 详情页的「识别」「第一步」两行 */
+    go('#/card/p-hand');
+    const view=document.getElementById('view');
+    chk('p-hand detail has katex', view.querySelectorAll('.katex').length>0, String(view.querySelectorAll('.katex').length));
+    const rows=Array.from(view.querySelectorAll('.row'));
+    const idRow=rows.find(r=>r.textContent.includes('识别'));
+    const actRow=rows.find(r=>r.textContent.includes('第一步'));
+    chk('识别 row rendered (no raw)', !!idRow && !nakedLatex(idRow), idRow?idRow.textContent.trim().slice(0,80):'missing');
+    chk('第一步 row rendered (no raw)', !!actRow && !nakedLatex(actRow), actRow?actRow.textContent.trim().slice(0,80):'missing');
+    chk('识别 row contains katex', !!idRow && idRow.querySelectorAll('.katex').length>0);
+    chk('第一步 row contains katex', !!actRow && actRow.querySelectorAll('.katex').length>0);
+
+    /* 4. 罗盘命中理由 */
+    go('#/compass');
+    document.querySelector('[data-tag="mid"]').click();
+    const hit=document.querySelector('#hits .hit');
+    chk('compass hit rendered', !!hit);
+    chk('compass 第一步 no raw LaTeX', hit && !nakedLatex(hit.querySelector('.small.mt-s')||hit),
+      hit?hit.textContent.slice(0,100):'no hit');
+
+    /* 5. 翻卡复习背面 */
+    go('#/review');
+    const flip=document.querySelector('#doflip');
+    if(flip) flip.click();
+    const back=document.querySelector('#back');
+    chk('review back no raw LaTeX', back && !nakedLatex(back), back?back.textContent.slice(0,100):'no back');
+    chk('review back has katex', back && back.querySelectorAll('.katex').length>0);
+
+    chk('no runtime errors', window.__ERRS.length===0, window.__ERRS.join(' | '));
+    log('---'); log('FAIL='+bad);
+    document.title='FORMULA_'+bad;
+  },500);
+})();
+</script>
+</body></html>
