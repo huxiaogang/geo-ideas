@@ -124,14 +124,6 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; }
 }
 .icon-btn:hover { background: var(--bg-soft); border-color: var(--line); }
 
-/* 档位切换 */
-.tier-switch { display: flex; background: var(--bg-soft); border-radius: 999px; padding: 2px; gap: 1px; }
-.tier-switch button {
-  border: 0; background: transparent; color: var(--ink-3);
-  font-size: 12.5px; padding: 4px 10px; border-radius: 999px; line-height: 1.5;
-}
-.tier-switch button.on { background: var(--bg-card); color: var(--ink); box-shadow: var(--shadow); font-weight: 600; }
-
 /* ------------------------------- 布局 ------------------------------- */
 .main { max-width: var(--maxw); margin: 0 auto; padding: 30px 20px 90px; }
 .page-head { margin-bottom: 26px; }
@@ -489,9 +481,6 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; }
   .nav { order: 3; flex: 1 0 100%; width: 100%; min-width: 0; margin: 0; }
   .nav a { padding: 5px 8px; font-size: 12.5px; }
   .topbar-tools { gap: 0; flex: 0 0 auto; }
-  .tier-switch { padding: 1px; }
-  .tier-switch button { padding: 3px 6px; font-size: 11px; }
-  .tier-switch button:not(.on) { display: none; }  /* 窄屏只显示当前档位，点顶栏档位名可循环切换 */
   .icon-btn { width: 30px; height: 30px; }
   .main { padding: 18px 12px 80px; }
   .hero { padding: 22px 18px; }

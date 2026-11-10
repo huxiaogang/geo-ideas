@@ -21,12 +21,11 @@
     intro: '这里不堆题，只训练一件事：看到图形，第一步该想什么。',
   };
 
-  const tierName = (n) => (meta().tiers || {})[n] || ('T' + n);
   const cardById = (id) => A.DB.byId[id];
   const patternIds = () => A.DB.cards.filter((c) => c.layer === 'pattern').map((c) => c.id);
-  const tierOf = () => S.s.tier;
-
-  function inTier(c) { return !c.tier || c.tier.includes(tierOf()); }
+  /* 档位筛选已从界面移除：内容不分档展示，全部卡片一律可见。
+     tier 字段仍保留在数据里，供将来按需使用。 */
+  const inTier = () => true;
 
   /* ------------------------------------------------------------------ *
    * 公共小组件
@@ -134,10 +133,6 @@
               <a class="btn" href="#/patterns">③ 基本图形（20 张）</a>
               <a class="btn" href="#/problems">④ 例题（16 道精讲）</a>
             </div>
-          </section>
-          <section class="card card-pad">
-            <h3 style="margin:0 0 6px;font-size:17px">当前档位：${esc(tierName(tierOf()))}</h3>
-            <p class="small muted" style="margin:0">顶栏可切换培优 / 联赛 / 自招。内容不分家，档位只影响今日推荐、翻卡队列、训练题池与罗盘排序。</p>
           </section>
           <section class="card card-pad">
             <h3 style="margin:0 0 6px;font-size:17px">我的薄弱点</h3>
@@ -593,19 +588,13 @@
             <div class="row" style="justify-content:center;margin-bottom:16px">
               <label class="small muted">题数</label>
               <select id="qn" class="btn sm"><option>5</option><option selected>8</option><option>12</option></select>
-              <label class="small muted">档位</label>
-              <select id="qt" class="btn sm">
-                <option value="all">全部</option><option value="${tierOf()}" selected>当前档 ${esc(tierName(tierOf()))}</option>
-              </select>
             </div>
             <button class="btn primary" id="start">开始训练 →</button>
             <div class="small muted mt">提示：答错会自动进入错因四分类，记录到错题图谱。</div>
           </section>`;
         stage.querySelector('#start').addEventListener('click', () => {
           const n = Number(stage.querySelector('#qn').value);
-          const tf = stage.querySelector('#qt').value;
-          let pool = patterns.filter((c) => tf === 'all' || (c.tier || []).includes(Number(tf)));
-          if (pool.length < 4) pool = patterns;
+          const pool = patterns;
           queue = shuffle(pool).slice(0, Math.min(n, pool.length));
           qi = 0; right = 0; answered = 0;
           next();
@@ -713,12 +702,11 @@
         '正面只看图：先自己说出「识别信号 + 第一步动作」，再翻背面核对。按会 / 模糊 / 不会安排下次。',
         '<a href="#/">今日</a> / 翻卡复习')));
 
-      const all = A.byLayer('pattern').filter((c) => inTier(c));
+      const all = A.byLayer('pattern');
       const due = store.dueCards(all.map((c) => c.id)).map((x) => cardById(x.id)).filter(Boolean);
       const queue = due.length ? due.slice(0, 12) : all.slice(0, 6);
       root.appendChild(el(`<div class="row mb"><span class="pill">到期 ${due.length} 张</span>
-        <span class="pill">本次 ${queue.length} 张</span>
-        <span class="small muted">当前档位：${esc(tierName(tierOf()))}</span></div>`));
+        <span class="pill">本次 ${queue.length} 张</span></div>`));
 
       const wrap = el('<div class="flip-wrap"></div>');
       root.appendChild(wrap);
@@ -917,24 +905,7 @@
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMin meet">${links}${heads}${nodes}</svg></div>`);
       root.appendChild(canvas);
 
-      root.appendChild(el(`<div class="row mt"><span class="small muted">悬停节点看关联，点击进入卡片。</span>
-        <label class="row small" style="gap:5px;margin-left:auto"><input type="checkbox" id="tf" checked> 只看当前档位 ${esc(tierName(tierOf()))}</label></div>`));
-
-      const svg = canvas.querySelector('svg');
-      const tf = root.querySelector('#tf');
-      function apply() {
-        const on = tf.checked;
-        svg.querySelectorAll('.node').forEach((n) => {
-          const c = cardById(n.dataset.id);
-          n.classList.toggle('dim', on && c && !inTier(c));
-        });
-        svg.querySelectorAll('.link').forEach((l) => {
-          const a = cardById(l.dataset.a), b = cardById(l.dataset.b);
-          l.classList.toggle('dim', on && ((a && !inTier(a)) || (b && !inTier(b))));
-        });
-      }
-      tf.addEventListener('change', apply);
-      apply();
+      root.appendChild(el(`<div class="row mt"><span class="small muted">悬停节点看关联，点击进入卡片。</span></div>`));
     },
   };
 

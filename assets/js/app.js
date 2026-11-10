@@ -119,7 +119,6 @@
 
   /* -------------------------------- 顶栏 -------------------------------- */
   function buildShell() {
-    const t = global.Store.s.tier;
     document.body.insertAdjacentHTML('afterbegin', `
       <header class="topbar"><div class="topbar-inner">
         <a class="brand" href="#/"><b>平面几何·解题思想</b><span>Grade 7–12</span></a>
@@ -135,9 +134,6 @@
           <a href="#/map" data-k="map">地图</a>
         </nav>
         <div class="topbar-tools">
-          <div class="tier-switch" title="切换目标档位，影响推荐与筛选">
-            ${[1, 2, 3].map((n) => `<button data-tier="${n}" class="${n === t ? 'on' : ''}">${DB.tiers[n]}</button>`).join('')}
-          </div>
           <button class="icon-btn" id="btn-search" title="搜索（/）" aria-label="搜索"><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8.6" cy="8.6" r="5.4"></circle><path d="M12.6 12.6 L17 17"></path></svg></button>
           <button class="icon-btn" id="btn-theme" title="切换深浅色" aria-label="切换主题">◐</button>
         </div>
@@ -149,16 +145,6 @@
       </footer>
       <div class="toast" id="toast"></div>
     `);
-
-    document.querySelectorAll('.tier-switch button').forEach((b) => {
-      b.addEventListener('click', () => {
-        const n = Number(b.dataset.tier);
-        global.Store.s.tier = n;
-        global.Store.save();
-        document.querySelectorAll('.tier-switch button').forEach((x) => x.classList.toggle('on', x === b));
-        route();
-      });
-    });
 
     document.getElementById('btn-theme').addEventListener('click', () => {
       const cur = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
