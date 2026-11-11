@@ -35,7 +35,7 @@
     chk('quick starts present', hits && hits.querySelectorAll('[data-quick]').length === 8,
       hits ? String(hits.querySelectorAll('[data-quick]').length) : 'no hits');
 
-    /* 勾选「出现中点」→ 第一位应是倍长中线或中位线 */
+    /* 选中「出现中点」→ 第一位应是倍长中线或中位线 */
     const mid = box.querySelector('[data-tag="mid"]');
     mid.click();
     const first = hits.querySelector('.hit h3 a');
@@ -45,17 +45,37 @@
     chk('mid -> has 第一步', /第一步/.test(hits.textContent));
     log('     top3: ' + Array.from(hits.querySelectorAll('.hit h3 a')).slice(0,3).map(a=>a.textContent.trim()).join(' | '));
 
-    /* 再加「共顶点旋转」 */
+    /* 单选：点「共顶点旋转」后，之前选中的「中点」应自动取消 */
     const rot = box.querySelector('[data-tag="rotate"]');
     rot.click();
+    chk('single-select: exactly 1 tag active', box.querySelectorAll('.tag-pick.on').length === 1,
+      String(box.querySelectorAll('.tag-pick.on').length));
+    chk('single-select: previous tag deselected', !mid.classList.contains('on'));
+    chk('single-select: clicked tag active', rot.classList.contains('on'));
     const titles = Array.from(hits.querySelectorAll('.hit h3 a')).map(a=>a.textContent.trim());
     chk('rotate -> 手拉手 ranked high', titles.slice(0,4).some(t=>/手拉手/.test(t)),
       titles.slice(0,4).join(' | '));
     log('     top4: ' + titles.slice(0,4).join(' | '));
 
+    /* 再点一次同一个标签应取消选择 */
+    rot.click();
+    chk('single-select: re-click deselects', box.querySelectorAll('.tag-pick.on').length === 0);
+    chk('single-select: empty state back', /先选一个条件/.test(hits.textContent));
+
+    /* 快速起手按钮也遵循单选 */
+    mid.click();
+    const quickBtn = hits.querySelector('[data-quick="cyclic"]');
+    if (quickBtn) {
+      quickBtn.click();
+      chk('quick start also single-select', box.querySelectorAll('.tag-pick.on').length === 1,
+        String(box.querySelectorAll('.tag-pick.on').length));
+      chk('quick start selected the right tag',
+        box.querySelector('.tag-pick.on[data-tag="cyclic"]') !== null);
+    }
+
     /* 清空 */
     document.querySelector('#clr').click();
-    chk('clear restores empty state', /先勾几个条件/.test(hits.textContent));
+    chk('clear restores empty state', /先选一个条件/.test(hits.textContent));
 
     /* 自由文本检索 */
     const ft = document.querySelector('#freetext');

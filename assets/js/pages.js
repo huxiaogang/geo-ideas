@@ -188,7 +188,7 @@
     title: '解题罗盘',
     render({ root, q }) {
       root.appendChild(el(pageHead('解题罗盘',
-        '勾选题干里看得见的条件特征，系统按「识别信号 → 第一步动作」反查该想什么。命中理由写在每条推荐下面。',
+        '选一个题干里看得见的条件特征，系统按「识别信号 → 第一步动作」反查该想什么。命中理由写在每条推荐下面。',
         '<a href="#/">今日</a> / 解题罗盘')));
 
       const tags = A.DB.tags;
@@ -197,12 +197,12 @@
 
       const layout = el('<div class="compass"></div>');
       const left = el(`<section class="card card-pad">
-        <div class="spread mb"><b>① 勾选题干特征</b><button class="btn sm ghost" id="clr">清空</button></div>
+        <div class="spread mb"><b>① 选择题干特征</b><button class="btn sm ghost" id="clr">清空</button></div>
         <div id="tagbox"></div>
         <div class="mt" style="border-top:1px solid var(--line);padding-top:12px">
           <div class="small muted mb">② 也可以直接描述卡点：</div>
           <input class="btn" style="width:100%;text-align:left;justify-content:flex-start" id="freetext"
-            placeholder="例：出现中点 + 要证两条线段相等" value="${esc(q.q || '')}">
+            placeholder="例：出现中点，要证两条线段相等" value="${esc(q.q || '')}">
         </div>
       </section>`);
       const right = el(`<section class="card card-pad">
@@ -212,15 +212,20 @@
       layout.appendChild(left); layout.appendChild(right); root.appendChild(layout);
 
       const box = left.querySelector('#tagbox');
-      let lastTag = '';   // 最近勾选的标签，给它的 first 卡一点加权，让推荐跟手
+      /* 单选：每次只能选中一个标签。点已选中的标签则取消选择。 */
+      function selectTag(id) {
+        box.querySelectorAll('.tag-pick.on').forEach((b) => {
+          if (b.dataset.tag !== id) b.classList.remove('on');
+        });
+      }
       for (const g of groups) {
         const gd = el(`<div class="tag-group"><h4>${esc(g)}</h4></div>`);
         tags.filter((t) => t.group === g).forEach((t) => {
           const b = el(`<button class="tag-pick" type="button" data-tag="${t.id}" title="${esc(t.desc || '')}">${esc(t.label)}</button>`);
           b.addEventListener('click', () => {
             const on = !b.classList.contains('on');
+            if (on) selectTag(t.id);          // 先清掉其它标签
             b.classList.toggle('on', on);
-            if (on) lastTag = t.id;
             compute();
           });
           gd.appendChild(b);
@@ -238,7 +243,7 @@
         if (!terms.length) {
           const quick = ['mid', 'bisect', 'rotate', 'cyclic', 'extreme', 'sum-seg', 'ratio', 'prove-equal'];
           hitbox.innerHTML = `<div class="empty" style="padding:26px 10px">
-            <b>先勾几个条件</b>例如「中点」+「要证相等」，也可以把题干特征写进下面的输入框。<br>
+            <b>先选一个条件</b>例如「出现中点」，也可以把题干特征写进下面的输入框。<br>
             <div class="row mt" style="justify-content:center;gap:6px">
               <span class="small muted" style="width:100%">常见起手：</span>
               ${quick.map((id) => {
@@ -248,7 +253,10 @@
             </div></div>`;
           hitbox.querySelectorAll('[data-quick]').forEach((b) => b.addEventListener('click', () => {
             const t = box.querySelector(`[data-tag="${b.dataset.quick}"]`);
-            if (t) t.classList.add('on');
+            if (t) {
+              selectTag(b.dataset.quick);
+              t.classList.add('on');
+            }
             compute();
           }));
           countEl.textContent = '';
@@ -263,8 +271,7 @@
           const t = tagById[tid];
           if (!t) continue;
           (t.first || []).forEach((id, i) => {
-            const boost = (tid === lastTag ? 5 : 0) + 10 - i * 2;
-            scored.set(id, (scored.get(id) || 0) + boost);
+            scored.set(id, (scored.get(id) || 0) + 10 - i * 2);
             if (!reasons.has(id)) reasons.set(id, []);
             reasons.get(id).push(`<em>${esc(t.label)}</em> → ${MD.inlineRender(t.why || t.hint || '')}`);
           });
@@ -317,7 +324,6 @@
       left.querySelector('#clr').addEventListener('click', () => {
         box.querySelectorAll('.tag-pick.on').forEach((b) => b.classList.remove('on'));
         left.querySelector('#freetext').value = '';
-        lastTag = '';
         compute();
       });
       left.querySelector('#freetext').addEventListener('input', compute);
