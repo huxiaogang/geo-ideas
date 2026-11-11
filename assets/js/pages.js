@@ -15,7 +15,6 @@
       { key: '落地', title: '落地', desc: '选工具完成论证与计算', question: '用哪套工具算？' },
       { key: '验算', title: '验算', desc: '用极端位置检验结论', question: '退化时还成立吗？' },
     ],
-    tiers: { 1: '培优', 2: '联赛', 3: '自招' },
     layerNames: LAYER,
     moto: '把直觉拆成可检索的动作',
     intro: '这里不堆题，只训练一件事：看到图形，第一步该想什么。',
@@ -23,9 +22,6 @@
 
   const cardById = (id) => A.DB.byId[id];
   const patternIds = () => A.DB.cards.filter((c) => c.layer === 'pattern').map((c) => c.id);
-  /* 档位筛选已从界面移除：内容不分档展示，全部卡片一律可见。
-     tier 字段仍保留在数据里，供将来按需使用。 */
-  const inTier = () => true;
 
   /* ------------------------------------------------------------------ *
    * 公共小组件
@@ -46,8 +42,7 @@
     return d.outerHTML;
   }
 
-  /* 只显示层级标签。档位标签已从界面移除：绝大多数卡片三档通用，
-     印出来只是噪音，也让「筛选/切换」看起来该有效却无效。 */
+  /* 只显示层级标签。 */
   function cardTitle(c) {
     return `<span class="tag ${c.layer}">${LAYER[c.layer]}</span>`;
   }
@@ -146,7 +141,7 @@
       root.appendChild(grid);
 
       /* 今日推荐：到期优先，不够补新卡 */
-      const due = store.dueCards(patternIds()).filter((x) => inTier(cardById(x.id)));
+      const due = store.dueCards(patternIds());
       const rec = due.slice(0, 3).map((x) => cardById(x.id)).filter(Boolean);
       const sec = el(`<section class="mt"><div class="spread mb">
           <h2 style="margin:0;font-size:20px">今天该回顾的图</h2>
@@ -299,12 +294,6 @@
           }
         }
 
-        /* 档位加权 */
-        for (const [id, sc] of scored) {
-          const c = cardById(id);
-          if (c && inTier(c)) scored.set(id, sc + 4);
-        }
-
         const list = Array.from(scored.entries())
           .map(([id, sc]) => ({ c: cardById(id), sc, why: reasons.get(id) || [] }))
           .filter((x) => x.c)
@@ -360,7 +349,7 @@
         `<a href="#/">今日</a> / ${esc(wm.title)}`)));
 
       const all = A.byLayer(layer);
-      /* 不做档位筛选：一次显示全部，避免给学生「点了没反应」的控件 */
+      /* 内容全量展示，不做筛选。 */
       const bar = el(`<div class="card card-pad mb row" style="gap:10px">
         <span class="small muted">共 ${all.length} 张</span>
         ${layer === 'pattern' ? '<a class="btn sm primary" style="margin-left:auto" href="#/review">开始翻卡复习 →</a>' : ''}
@@ -771,7 +760,7 @@
         }));
       }
       if (queue.length) paint();
-      else root.appendChild(el('<div class="empty">这个档位还没有卡片。</div>'));
+      else root.appendChild(el('<div class="empty">还没有卡片。</div>'));
     },
   };
 
@@ -863,7 +852,7 @@
     title: '方法地图',
     render({ root }) {
       root.appendChild(el(pageHead('方法地图',
-        '四层知识的关系图。点击节点进入卡片；勾选「只看当前档位」可收起无关内容。',
+        '四层知识的关系图。点击节点进入卡片。',
         '<a href="#/">今日</a> / 方法地图')));
 
       const layers = ['idea', 'method', 'pattern', 'problem'];

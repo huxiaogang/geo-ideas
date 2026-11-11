@@ -7,7 +7,6 @@
   const KEY = 'geo-think.v1';
 
   const DEFAULT = {
-    tier: 2,                     // 1 培优 / 2 联赛 / 3 自招
     theme: '',                   // '' 跟随系统 | 'light' | 'dark'
     srs: {},                     // cardId -> { ease, ivl, due, reps, lapses, last }
     marks: {},                   // cardId -> 'known' | 'fuzzy' | 'unknown'（一次性自评）

@@ -36,7 +36,7 @@
 | 错题图谱 | 模型 × 错因 热力图 + 优先复现清单 + 备份导入导出 |
 | 方法地图 | 四层知识关系图 |
 
-顶栏可切换 **培优 / 联赛 / 自招** 三档：内容不分家，档位只影响推荐、筛选与排序。按 `/` 唤起搜索，`◐` 切换深浅色。
+内容全量展示，不做档位切换或筛选。按 `/` 唤起搜索，`◐` 切换深浅色。
 
 ## 几何图为什么可信
 
@@ -58,7 +58,7 @@ assets/js/
   figures.js          22 张图形定义 + 数学断言
   md.js               迷你 Markdown + KaTeX
   store.js            localStorage 状态 + 简化 SM-2
-  app.js              路由、顶栏、搜索、档位、卡片组件
+  app.js              路由、顶栏、搜索、卡片组件
   pages.js            全部页面
 content/
   meta.js             四步定式与全局说明
@@ -87,7 +87,7 @@ vendor/katex/         本地化 KaTeX
 
 若想用最简方式（不开 Actions）：Settings → Pages → Source 选 `Deploy from a branch` → 选 `main` / `root`，保存即可，仓库根目录的 `index.html` 会被直接提供。
 
-本机当前状态（无法自动替你完成的部分）：工作区还不是 git 仓库、没有配置 remote、未安装 `gh` CLI；本机 SSH 公钥在 `C:\Users\admin\.ssh\id_ed25519.pub`，需先添加到 GitHub 账户才能推送。
+当前仓库已配置 `origin`（`git@github.com:huxiaogang/geo-ideas.git`），`main` 跟踪 `origin/main`。推送前需确认本机 SSH 公钥（`C:\Users\admin\.ssh\id_ed25519.pub`）已添加到 GitHub 账户。
 
 ## 自检
 
@@ -95,9 +95,11 @@ vendor/katex/         本地化 KaTeX
 
 ```
 pwsh -ExecutionPolicy Bypass -File tests/_runner.ps1
+# Windows PowerShell 5.1 也可用：
+powershell -ExecutionPolicy Bypass -File tests/_runner.ps1
 ```
 
-（本机若禁止运行脚本，可用 `-ExecutionPolicy Bypass`；或直接逐个打开下面的 html。）
+（本机若禁止运行脚本，可用 `-ExecutionPolicy Bypass`；脚本会自动使用临时 Chrome 配置，避免与本机已打开的浏览器冲突。也可以直接逐个打开下面的 html。）
 
 每个测试页跑完会把结果写进 `<title>`，`_0` 即通过：
 

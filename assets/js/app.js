@@ -1,5 +1,5 @@
 /* ==========================================================================
-   app.js —— 站点外壳：路由、顶栏、全局档位、搜索、toast
+   app.js —— 站点外壳：路由、顶栏、搜索、toast
    ========================================================================== */
 (function (global) {
   'use strict';
@@ -17,7 +17,6 @@
     cards: [],
     byId: {},
     tags: [],
-    tiers: { 1: '培优', 2: '联赛', 3: '自招' },
   };
 
   function loadContent() {
@@ -47,7 +46,6 @@
   }
 
   const byLayer = (l) => DB.cards.filter((c) => c.layer === l);
-  const byTier = (list, tier) => list.filter((c) => !c.tier || c.tier.includes(tier));
 
   /* -------------------------------- 路由 -------------------------------- */
   const routes = [
@@ -234,11 +232,6 @@
   /* -------------------------------- 工具函数 -------------------------------- */
   function cardHref(id) { return '#/card/' + id; }
 
-  function tierTags(tier) {
-    if (!tier) return '';
-    return tier.map((n) => `<span class="tag t${n}">${DB.tiers[n]}</span>`).join(' ');
-  }
-
   function cardTile(c) {
     const t = document.createElement('button');
     t.className = 'pcard';
@@ -277,8 +270,8 @@
   }
 
   global.App = {
-    Pages, DB, boot, route, esc, el, toast, LAYER, cardHref, tierTags, cardTile,
-    byLayer, byTier, openSearch,
+    Pages, DB, boot, route, esc, el, toast, LAYER, cardHref, cardTile,
+    byLayer, openSearch,
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

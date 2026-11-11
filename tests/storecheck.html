@@ -10,7 +10,6 @@
   const S = window.Store;
 
   S.reset();
-  chk('default tier=2', S.s.tier === 2);
   chk('today format', /^\d{4}-\d{2}-\d{2}$/.test(S.today()), S.today());
 
   /* SRS：新卡评「会」→ 1 天 */

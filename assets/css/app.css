@@ -166,8 +166,6 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; }
 .tag.method { background: var(--blue-soft); color: var(--blue); border-color: transparent; }
 .tag.pattern { background: var(--green-soft); color: var(--green); border-color: transparent; }
 .tag.problem { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
-.tag.t1 { border-color: var(--line-strong); color: var(--ink-2); }
-.tag.t2 { background: var(--blue-soft); color: var(--blue); border-color: transparent; }
 .tag.t3 { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
 .tag.ghost { background: transparent; }
 
